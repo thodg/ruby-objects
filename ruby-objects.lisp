@@ -1,4 +1,23 @@
 
+(in-package :cl-user)
+
+(defpackage :ruby
+  (:use :cl)
+  (:shadow
+   #:class
+   #:find-class
+   #:find-method)
+  (:export
+   #:*self*
+   #:ruby-class
+   #:ruby-object
+   #:public-send
+   #:public-send*
+   #:send
+   #:send*))
+
+(in-package :ruby)
+
 (defclass ruby-object ()
   ((class :initarg :class
           :accessor ruby-class
@@ -111,9 +130,6 @@
   (or (find-ruby-class name)
       (error "Ruby class not found: ~A" name)))
 
-(defvar *class*)
-(declaim (type ruby-class *class*))
-
 (defvar *def*)
 (declaim (type function *def*))
 
@@ -138,8 +154,8 @@
        (when ,super
          (setf (super-class ,class)
                (find-ruby-class! ,super)))
-       (let ((*class* ,class)
-             (*def* #'def-public-method))
+       (let ((*def* #'def-public-method)
+             (*self* ,class))
          ,@body)
        (setf (find-ruby-class ',name) ,class)
        ',name)))
@@ -159,7 +175,7 @@
     `(labels ((,name ,args
                 ,@(when doc `(,doc))
                 ,@body))
-       (funcall (the function *def*) *class* ',name #',name))))
+       (funcall (the function *def*) *self* ',name #',name))))
 
 (defvar *self*)
 (declaim (type ruby-object *self*))
