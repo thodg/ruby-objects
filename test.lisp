@@ -34,7 +34,7 @@
     (@ x)))
 
 (let ((test (new :test)))
-  (format t "~&test fact 5 = ~A~%" (send test :fact 5))
-  (format t "test x ~A~%" (send test :x))
-  (format t "test x= 5 ~A~%" (send test :x= 5))
-  (format t "test x ~A~%" (send test :x)))
+  (format t "~&test fact 5 => ~A~%" (send test :fact 5))
+  (format t "test x      => ~A~%" (send test :x))
+  (format t "test x= 5   => ~A~%" (send test :x= 5))
+  (format t "test x      => ~A~%" (send test :x)))
