@@ -1,20 +1,20 @@
-
-(in-package :cl-user)
-
-(defpackage :ruby
-  (:use :cl)
-  (:shadow
-   #:class
-   #:find-class
-   #:find-method)
-  (:export
-   #:*self*
-   #:ruby-class
-   #:ruby-object
-   #:public-send
-   #:public-send*
-   #:send
-   #:send*))
+;;
+;;  ruby-objects  -  Ruby objects for Common Lisp
+;;
+;;  Copyright 2019,2020 Thomas de Grivel <thoxdg@gmail.com>
+;;
+;;  Permission to use, copy, modify, and distribute this software for any
+;;  purpose with or without fee is hereby granted, provided that the above
+;;  copyright notice and this permission notice appear in all copies.
+;;
+;;  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+;;  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+;;  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+;;  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+;;  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+;;  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+;;  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+;;
 
 (in-package :ruby)
 
@@ -51,8 +51,6 @@
 (defgeneric def-protected-method (class name fn))
 
 (defgeneric find-public-method (class name))
-(eval-when (:compile-toplevel)
-  (shadow 'find-method))
 (defgeneric find-method (class name))
 
 (defmethod def-public-method ((class ruby-class)
@@ -94,8 +92,6 @@
           (when super
             (find-public-method super name))))))
 
-(shadow 'find-method)
-
 (defmethod find-method ((class ruby-class)
                         (name symbol))
   (let ((found (assoc name (direct-public-methods class))))
@@ -133,9 +129,6 @@
 (defvar *def*)
 (declaim (type function *def*))
 
-(eval-when (:compile-toplevel)
-  (shadow 'class))
-
 (defmacro class (name &body body)
   (let ((super (when (eq '< (first body))
                  (pop body)
@@ -150,6 +143,7 @@
                            class))
                        (make-instance 'ruby-class
                                       :class (find-ruby-class :class)
+                                      :super-class (find-ruby-class :object)
                                       :name ',name))))
        (when ,super
          (setf (super-class ,class)
@@ -177,73 +171,6 @@
                 ,@body))
        (funcall (the function *def*) *self* ',name #',name))))
 
-(defvar *self*)
-(declaim (type ruby-object *self*))
-
-(defun public-send* (method &rest args)
-  (let* ((class (ruby-class *self*))
-         (fn (find-public-method class method)))
-    (unless fn
-      (multiple-value-bind (fn type) (find-method class method)
-        (if fn
-            (error "method is ~A : ~A#~A"
-                   type
-                   (class-name class)
-                   method)
-            (error "method missing ~A#~A"
-                   (class-name class)
-                   method))))
-    (apply (the function fn) args)))
-
-(defun send* (method &rest args)
-  (let* ((class (ruby-class *self*))
-         (fn (find-method class method)))
-    (unless fn
-      (error "method missing ~A#~A"
-             (class-name class)
-             method))
-    (apply (the function fn) args)))
-
-(defmacro public-send (object method &body args)
-  `(let* ((*self* ,object))
-     (public-send* ,method ,@args)))
-
-(defmacro send (object method &body args)
-  `(let* ((*self* ,object))
-     (send* ,method ,@args)))
-
-(defmacro @ (name)
-  (let ((name (intern (string-upcase name) :keyword)))
-    `(cdr (or (assoc ,name (instance-variables *self*))
-              (let ((a (cons ,name nil)))
-                (push a (instance-variables *self*))
-                a)))))
-
-(class object
-  (def public-respond-to? (name)
-    (declare (type symbol name))
-    (when (find-public-method (ruby-class *self*) name)
-      t))
-  (def respond-to? (name)
-    (declare (type symbol name))
-    (when (find-method (ruby-class *self*) name)
-      t)))
-
-(class test < object
-  (private)
-  (def fact (x)
-    "This is a recursive implementation of factorial (!)"
-    (declare (type integer x))
-    (if (< x 1)
-        1
-        (* x (the integer (send* :fact (1- x))))))
-  (def x= (x)
-    "setter for x"
-    (setf (@ x) x))
-  (def x ()
-    "getter for x"
-    (@ x)))
-
 (defgeneric new (class &rest args))
 
 (defmethod new ((class ruby-class) &rest args)
@@ -254,9 +181,3 @@
 
 (defmethod new ((class symbol) &rest args)
   (apply #'new (find-ruby-class class) args))
-
-(let ((test (new :test)))
-  (format t "~&test fact 5 = ~A~%" (send test :fact 5))
-  (format t "test x ~A~%" (send test :x))
-  (format t "test x= 5 ~A~%" (send test :x= 5))
-  (format t "test x ~A~%" (send test :x)))
