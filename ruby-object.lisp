@@ -53,6 +53,16 @@
   `(let* ((*self* ,object))
      (send* ,method ,@args)))
 
+#+nil
+(defun public-send (object method &rest args)
+  (let ((*self* object))
+    (apply #'public-send* method args)))
+
+#+nil
+(defun send (object method &rest args)
+  (let ((*self* object))
+     (apply #'send* method args)))
+
 (defmacro @ (name)
   (let ((name (intern (string-upcase name) :keyword)))
     `(cdr (or (assoc ,name (instance-variables *self*))
