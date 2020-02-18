@@ -38,3 +38,40 @@
   (format t "test x      => ~A~%" (send test :x))
   (format t "test x= 5   => ~A~%" (send test :x= 5))
   (format t "test x      => ~A~%" (send test :x)))
+
+(class my-class
+
+       (def my-method ()
+           0)
+
+       (def my-method1 (x)
+         (1+ x))
+
+       (def my-method2 (x y)
+         (+ x y)))
+
+(defvar *object* (new :my-class))
+(defparameter *n* 4096)
+(declaim (type fixnum *n*))
+
+(defun test-public-send ()
+  (time
+   (let ((n *n*))
+     (dotimes (x n)
+       (dotimes (y n)
+         (public-send *object* :my-method)
+         (public-send *object* :my-method1 x)
+         (public-send *object* :my-method2 x y))))))
+
+(test-public-send)
+
+(defun test-send ()
+  (time
+   (let ((n *n*))
+     (dotimes (x n)
+       (dotimes (y n)
+         (send *object* :my-method)
+         (send *object* :my-method1 x)
+         (send *object* :my-method2 x y))))))
+
+(test-send)
