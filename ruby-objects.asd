@@ -33,5 +33,4 @@
    (:file "ruby-class" :depends-on ("package"))
    (:file "ruby-object" :depends-on ("ruby-class"))
    (:file "class" :depends-on ("ruby-object"))
-   (:file "object" :depends-on ("ruby-object"))
-   (:file "test" :depends-on ("class" "object"))))
+   (:file "object" :depends-on ("ruby-object"))))

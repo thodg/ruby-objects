@@ -43,9 +43,10 @@
 
 (in-package :ruby)
 
-(defun shadowing-import-from ()
-  `(:shadowing-import-from :ruby
-                           ,@(package-shadowing-symbols :ruby)))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun shadowing-import-from ()
+    `(:shadowing-import-from :ruby
+                             ,@(package-shadowing-symbols :ruby))))
 
 (in-package :common-lisp-user)
 
